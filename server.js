@@ -16,14 +16,14 @@ import opponentRoutes from "./routes/opponentRoutes.js";
 
 const app = express();
 
-
+// ✅ استخدم PORT من البيئة أو أي قيمة احتياطية (Vercel بيديها تلقائي)
 const PORT = process.env.PORT || 4300;
 
-
+// Middleware
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 
-
+// Test route
 app.get("/", (req, res) => {
   res.send("✅ API is working on Vercel");
 });
@@ -38,7 +38,7 @@ app.use("/api/settings", settingsRoutes);
 app.use("/api/clients", clientRoutes);
 app.use("/api/opponents", opponentRoutes);
 
-
+// DB connection
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("✅ Connected to MongoDB"))
@@ -50,4 +50,10 @@ console.log("☁️ Cloudinary config:", {
   api_secret: process.env.CLOUDINARY_API_SECRET ? "✔️ Loaded" : "❌ Not loaded",
 });
 
+// ✅ هذا السطر ضروري لـ Vercel
 export default app;
+
+// ✅ هذا الجزء فقط للتشغيل المحلي
+if (process.env.NODE_ENV !== "production") {
+  app.listen(PORT, () => console.log(`🚀 Local server running on port ${PORT}`));
+}
