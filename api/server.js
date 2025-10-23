@@ -5,14 +5,14 @@ import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 
-import caseRoutes from "./routes/caseRoutes.js";
-import lawyerRoutes from "./routes/lawyerRoutes.js";
-import userRoutes from "./routes/userRoutes.js";
-import postRoutes from "./routes/postRoutes.js";
-import documentRoutes from "./routes/documentRoutes.js";
-import settingsRoutes from "./routes/settingsRoutes.js";
-import clientRoutes from "./routes/clientRoutes.js";
-import opponentRoutes from "./routes/opponentRoutes.js";
+import caseRoutes from "../routes/caseRoutes.js";
+import lawyerRoutes from "../routes/lawyerRoutes.js";
+import userRoutes from "../routes/userRoutes.js";
+import postRoutes from "../routes/postRoutes.js";
+import documentRoutes from "../routes/documentRoutes.js";
+import settingsRoutes from "../routes/settingsRoutes.js";
+import clientRoutes from "../routes/clientRoutes.js";
+import opponentRoutes from "../routes/opponentRoutes.js";
 
 const app = express();
 
