@@ -20,21 +20,13 @@ const app = express();
 // const PORT = process.env.PORT || 4300;
 
 // Middleware
-app.options('*', cors());
-app.use(cors({
-  origin: [
-    'https://office-youssef-saoor.vercel.app',
-    'http://localhost:3000'
-  ],
-  credentials: false,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
-}));
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Headers', '*');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  
   if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
+    return res.status(200).end();
   }
   next();
 });
@@ -58,9 +50,7 @@ app.use("/api/opponents", opponentRoutes);
 // DB connection
 mongoose
   .connect(process.env.MONGO_URI,{
-        useNewUrlParser: true,
-  useUnifiedTopology: true,
-  serverSelectionTimeoutMS: 30000,
+      serverSelectionTimeoutMS: 30000,
   socketTimeoutMS: 45000,
   maxPoolSize: 10,
   })
