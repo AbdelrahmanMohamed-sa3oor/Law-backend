@@ -53,7 +53,7 @@ console.log("☁️ Cloudinary config:", {
 // ✅ هذا السطر ضروري لـ Vercel
 export default app;
 
-// ✅ هذا الجزء فقط للتشغيل المحلي
+
 if (process.env.NODE_ENV !== "production") {
   app.listen(PORT, () => console.log(`🚀 Local server running on port ${PORT}`));
 }
