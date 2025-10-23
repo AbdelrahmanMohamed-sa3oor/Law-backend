@@ -11,7 +11,7 @@
   "keywords": [],
   "author": "",
   "engines": {
-    "node": "22.12.0"
+    "node": "22"
   },
   "license": "ISC",
   "description": "",
