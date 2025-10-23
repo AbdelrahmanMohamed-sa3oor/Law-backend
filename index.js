@@ -50,8 +50,11 @@ app.use("/api/opponents", opponentRoutes);
 // DB connection
 mongoose
   .connect(process.env.MONGO_URI,{
-      useNewUrlParser: true,
+        useNewUrlParser: true,
   useUnifiedTopology: true,
+  serverSelectionTimeoutMS: 30000,
+  socketTimeoutMS: 45000,
+  maxPoolSize: 10,
   })
   .then(() => console.log("✅ Connected to MongoDB"))
   .catch((err) => console.error("❌ DB Error:", err));
