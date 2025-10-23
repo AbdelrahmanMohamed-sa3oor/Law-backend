@@ -20,7 +20,15 @@ const app = express();
 // const PORT = process.env.PORT || 4300;
 
 // Middleware
-app.use(cors());
+app.options('*', cors());
+app.use(cors({
+  origin: [
+    'https://office-youssef-saoor.vercel.app',
+    'http://localhost:3000'
+  ],
+  credentials: false,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+}));
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Headers', '*');
