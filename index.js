@@ -17,7 +17,7 @@ import opponentRoutes from "./routes/opponentRoutes.js";
 const app = express();
 
 // ✅ استخدم PORT من البيئة أو أي قيمة احتياطية (Vercel بيديها تلقائي)
-const PORT = process.env.PORT || 4300;
+// const PORT = process.env.PORT || 4300;
 
 // Middleware
 app.use(cors());
@@ -53,7 +53,3 @@ console.log("☁️ Cloudinary config:", {
 // ✅ هذا السطر ضروري لـ Vercel
 export default app;
 
-
-if (process.env.NODE_ENV !== "production") {
-  app.listen(PORT, () => console.log(`🚀 Local server running on port ${PORT}`));
-}
