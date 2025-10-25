@@ -25,7 +25,7 @@ router.post(
   "/",
   protect,
   authorizeRoles("admin", "subadmin"),
-  upload.array("attachments", 5), // استقبال حتى 5 صور
+  upload.array("attachments", 15), // استقبال حتى 5 صور
   createCase
 );
 // جلب القضايا بالصفحات 

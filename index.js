@@ -20,16 +20,21 @@ const app = express();
 // const PORT = process.env.PORT || 4300;
 
 // Middleware
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-  next();
-});
+app.use(cors({
+  origin: [
+    'https://office-youssef-saoor.vercel.app',
+    'http://localhost:3000',
+    'http://localhost:5173'
+  ],
+  credentials: false,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'Accept'
+  ]
+}));
 app.use(express.json({ limit: "10mb" }));
 
 // Test route
@@ -49,10 +54,11 @@ app.use("/api/opponents", opponentRoutes);
 
 // DB connection
 mongoose
-  .connect(process.env.MONGO_URI,{
-      serverSelectionTimeoutMS: 30000,
-  socketTimeoutMS: 45000,
-  maxPoolSize: 10,
+  .connect(process.env.MONGO_URI, {
+    serverSelectionTimeoutMS: 30000,
+    socketTimeoutMS: 45000,
+    maxPoolSize: 15,
+    minPoolSize: 5,
   })
   .then(() => console.log("✅ Connected to MongoDB"))
   .catch((err) => console.error("❌ DB Error:", err));

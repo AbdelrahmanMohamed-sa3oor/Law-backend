@@ -9,6 +9,9 @@ const caseSchema = new mongoose.Schema({
   previousSession: Date,
   currentSession: Date,
   postponedTo: Date,
+  addressCase:String,
+  addressClient:String,
+  phoneClient:String,
   sessionDate: Date,
   decision: String,
   request: String,
@@ -33,7 +36,7 @@ const caseSchema = new mongoose.Schema({
       public_id: String
     }
   ]
-}, { timestamps: true , strictPopulate: false});
+}, { timestamps: true });
 
 export default mongoose.model("Case", caseSchema);
 

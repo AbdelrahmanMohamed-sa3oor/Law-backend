@@ -111,8 +111,8 @@ const createFirstAdmin = async () => {
     const admin = await Lawyer.create(adminData);
 
     console.log('\n✅ تم إنشاء الأدمن الرئيسي بنجاح!');
-    console.log('📧 كود التسجيل: 000000');
-    console.log('🔐 كلمة المرور: admin123');
+    console.log('📧 كود التسجيل: 000000',adminData.registrationNumber);
+    console.log('🔐 كلمة المرور: admin123',adminData.password);
     console.log('👤 الدور: admin');
     console.log('🆔 الـ ID:', admin._id);
 

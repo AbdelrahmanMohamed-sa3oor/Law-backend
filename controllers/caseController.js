@@ -22,15 +22,18 @@ export const createCase = async (req, res) => {
       notes,
       admin,
       expenses,
-      paid,      // استقبل منفصل
-      remaining  // استقبل منفصل
+      paid,     
+      remaining,  
+      addressCase,//اهو
+      addressClient,//اهو
+      phoneClient//اهو
     } = req.body;
 
     // ✅ رفع الصور إلى Cloudinary
     let images = [];
     if (req.files && req.files.length > 0) {
       console.log("🔼 Uploading images to Cloudinary...");
-      
+
       const uploadPromises = req.files.map(file => {
         return new Promise((resolve, reject) => {
           const uploadStream = cloudinary.uploader.upload_stream(
@@ -48,7 +51,7 @@ export const createCase = async (req, res) => {
               }
             }
           );
-          
+
           uploadStream.end(file.buffer);
         });
       });
@@ -74,10 +77,13 @@ export const createCase = async (req, res) => {
       caseType,
       jurisdiction,
       clientName,
+      addressCase,
+      addressClient,
+      phoneClient,
       opponentName,
       notes,
       paid: paid ? parseFloat(paid) : 0,           // ✅ هنا
-      remaining: remaining ? parseFloat(remaining) : 0 ,
+      remaining: remaining ? parseFloat(remaining) : 0,
       admin,
       lawyer: req.user._id,
       createdBy: req.user._id,
@@ -104,17 +110,17 @@ export const createCase = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: req.user.role === "admin" 
-        ? "تم إضافة القضية مباشرة" 
+      message: req.user.role === "admin"
+        ? "تم إضافة القضية مباشرة"
         : "تم إرسال القضية وفي انتظار الموافقة من المسؤل الرئيسي",
       case: newCase
     });
 
   } catch (err) {
     console.error("❌ Create Case Error:", err);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      error: err.message 
+      error: err.message
     });
   }
 };
@@ -138,9 +144,9 @@ export const getCaseById = async (req, res) => {
     });
   } catch (err) {
     console.error("❌ Get Case Error:", err);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      error: err.message 
+      error: err.message
     });
   }
 };
@@ -149,7 +155,7 @@ export const getCaseById = async (req, res) => {
 export const updateCase = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     console.log('📝 Update Case Request:', {
       params: req.params,
       body: req.body,
@@ -167,7 +173,7 @@ export const updateCase = async (req, res) => {
     }
 
     let updateData = { ...req.body };
-    
+
     // معالجة التواريخ إذا كانت موجودة
     const dateFields = ['previousSession', 'currentSession', 'postponedTo', 'sessionDate'];
     dateFields.forEach(field => {
@@ -177,7 +183,7 @@ export const updateCase = async (req, res) => {
         delete updateData[field]; // احذف الحقل إذا كان فارغ
       }
     });
-    
+
     // معالجة الأرقام إذا كانت موجودة
     const numberFields = ['year', 'expenses', 'paid', 'remaining'];
     numberFields.forEach(field => {
@@ -195,7 +201,7 @@ export const updateCase = async (req, res) => {
       try {
         const deletedImages = JSON.parse(req.body.deletedImages);
         console.log('🗑️ Deleting images:', deletedImages);
-        
+
         if (Array.isArray(deletedImages)) {
           // حذف الصور من Cloudinary
           const deletePromises = deletedImages.map(image => {
@@ -204,11 +210,11 @@ export const updateCase = async (req, res) => {
             }
             return Promise.resolve();
           });
-          
+
           await Promise.all(deletePromises);
-          
+
           // إزالة الصور المحذوفة من الـ array
-          finalImages = finalImages.filter(existingImage => 
+          finalImages = finalImages.filter(existingImage =>
             !deletedImages.some(deleted => deleted.public_id === existingImage.public_id)
           );
         }
@@ -220,7 +226,7 @@ export const updateCase = async (req, res) => {
     // إضافة الصور الجديدة
     if (req.files && req.files.length > 0) {
       console.log('🔼 Uploading new images to Cloudinary...');
-      
+
       const uploadPromises = req.files.map(file => {
         return new Promise((resolve, reject) => {
           const uploadStream = cloudinary.uploader.upload_stream(
@@ -242,7 +248,7 @@ export const updateCase = async (req, res) => {
               }
             }
           );
-          
+
           uploadStream.end(file.buffer);
         });
       });
@@ -253,9 +259,9 @@ export const updateCase = async (req, res) => {
         console.log(`✅ ${newImages.length} new files uploaded successfully`);
       } catch (uploadError) {
         console.error('❌ Cloudinary upload failed:', uploadError);
-        return res.status(500).json({ 
+        return res.status(500).json({
           success: false,
-          error: 'فشل في رفع الملفات الجديدة' 
+          error: 'فشل في رفع الملفات الجديدة'
         });
       }
     }
@@ -270,8 +276,8 @@ export const updateCase = async (req, res) => {
     console.log('💾 Final update data:', updateData);
 
     const updated = await Case.findByIdAndUpdate(
-      id, 
-      updateData, 
+      id,
+      updateData,
       { new: true, runValidators: true }
     ).populate('createdBy', 'name email');
 
@@ -282,9 +288,9 @@ export const updateCase = async (req, res) => {
     });
   } catch (err) {
     console.error("❌ Update Case Error:", err);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      error: err.message 
+      error: err.message
     });
   }
 };
@@ -292,7 +298,7 @@ export const updateCase = async (req, res) => {
 export const deleteCase = async (req, res) => {
   try {
     const deleted = await Case.findByIdAndDelete(req.params.id);
-    
+
     if (!deleted) {
       return res.status(404).json({
         success: false,
@@ -302,7 +308,7 @@ export const deleteCase = async (req, res) => {
 
     // حذف الصور من Cloudinary إذا كانت موجودة
     if (deleted.images && deleted.images.length > 0) {
-      const deletePromises = deleted.images.map(image => 
+      const deletePromises = deleted.images.map(image =>
         cloudinary.uploader.destroy(image.public_id)
       );
       await Promise.all(deletePromises);
@@ -314,9 +320,9 @@ export const deleteCase = async (req, res) => {
     });
   } catch (err) {
     console.error("❌ Delete Case Error:", err);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      error: err.message 
+      error: err.message
     });
   }
 };
@@ -335,9 +341,9 @@ export const getPendingCases = async (req, res) => {
     });
   } catch (err) {
     console.error("❌ Get Pending Cases Error:", err);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      error: err.message 
+      error: err.message
     });
   }
 };
@@ -358,8 +364,8 @@ export const approveOrRejectCase = async (req, res) => {
     if (action === "approve") {
       // الموافقة على القضية - تحديث الحالة فقط
       const updated = await Case.findByIdAndUpdate(
-        id, 
-        { approvalStatus: "approved" }, 
+        id,
+        { approvalStatus: "approved" },
         { new: true }
       ).populate("createdBy", "name email");
 
@@ -394,9 +400,9 @@ export const approveOrRejectCase = async (req, res) => {
     }
   } catch (err) {
     console.error("Approve/Reject Case Error:", err);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      error: err.message 
+      error: err.message
     });
   }
 };
@@ -440,13 +446,13 @@ export const getCasesPage = async (req, res) => {
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(Number(limit)),
-      
+
       // العدد الإجمالي للحالات المعتمدة بعد الفلتر
       Case.countDocuments(filter),
-      
+
       // عدد الحالات pending (باستخدام نفس الفلتر لكن مع حالة pending)
       Case.countDocuments({ ...statsFilter, approvalStatus: "pending" }),
-      
+
       // عدد الحالات approved (باستخدام نفس الفلتر لكن مع حالة approved)
       Case.countDocuments({ ...statsFilter, approvalStatus: "approved" })
     ]);
@@ -466,9 +472,9 @@ export const getCasesPage = async (req, res) => {
     });
   } catch (err) {
     console.error(" Search Cases Error:", err);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      error: err.message 
+      error: err.message
     });
   }
 };
@@ -476,7 +482,7 @@ export const getCasesPage = async (req, res) => {
 export const searchCases = async (req, res) => {
   try {
     const { caseNumber, clientName, year, sessionDate, postponedTo } = req.query; // اضف postponedTo
-    
+
     console.log('Search query:', req.query);
     console.log('Raw params:', { caseNumber, clientName, year, sessionDate, postponedTo });
 
@@ -485,26 +491,26 @@ export const searchCases = async (req, res) => {
     if (caseNumber) filter.caseNumber = { $regex: caseNumber, $options: "i" };
     if (clientName) filter.clientName = { $regex: clientName, $options: "i" };
     if (year) filter.year = Number(year);
-    
+
     // البحث على sessionDate
     if (sessionDate) {
       const start = new Date(sessionDate);
       start.setHours(0, 0, 0, 0);
-      
+
       const end = new Date(sessionDate);
       end.setHours(23, 59, 59, 999);
-      
+
       filter.sessionDate = { $gte: start, $lte: end };
     }
-    
+
     // البحث على postponedTo (موعد الجلسة القادمة)
     if (postponedTo) {
       const start = new Date(postponedTo);
       start.setHours(0, 0, 0, 0);
-      
+
       const end = new Date(postponedTo);
       end.setHours(23, 59, 59, 999);
-      
+
       filter.postponedTo = { $gte: start, $lte: end };
     }
 
@@ -523,18 +529,18 @@ export const searchCases = async (req, res) => {
     });
   } catch (err) {
     console.error("Search Cases Error:", err);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      error: err.message 
+      error: err.message
     });
   }
 };
 // تحليل ع القضايا الجرد
-export const getCaseStats= async (req, res) => {
+export const getCaseStats = async (req, res) => {
   try {
     const currentYear = new Date().getFullYear();
     const currentMonth = new Date().getMonth() + 1;
-    
+
     // إحصائيات أساسية
     const basicStats = await Case.aggregate([
       {
@@ -668,7 +674,7 @@ export const getCaseStats= async (req, res) => {
     formattedStats.financial.totalRevenue = formattedStats.overview.totalFeesPaid;
     formattedStats.financial.totalExpenses = formattedStats.overview.totalExpenses;
     formattedStats.financial.netProfit = formattedStats.financial.totalRevenue - formattedStats.financial.totalExpenses;
-    formattedStats.financial.profitMargin = formattedStats.financial.totalRevenue > 0 ? 
+    formattedStats.financial.profitMargin = formattedStats.financial.totalRevenue > 0 ?
       (formattedStats.financial.netProfit / formattedStats.financial.totalRevenue) * 100 : 0;
 
     formattedStats.overview.netProfit = formattedStats.financial.netProfit;
@@ -683,9 +689,9 @@ export const getCaseStats= async (req, res) => {
     });
   } catch (err) {
     console.error("Get Detailed Stats Error:", err);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      error: err.message 
+      error: err.message
     });
   }
 };
