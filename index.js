@@ -4,7 +4,6 @@ dotenv.config();
 import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
-
 import caseRoutes from "./routes/caseRoutes.js";
 import lawyerRoutes from "./routes/lawyerRoutes.js";
 import userRoutes from "./routes/userRoutes.js";

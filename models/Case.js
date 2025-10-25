@@ -36,7 +36,7 @@ const caseSchema = new mongoose.Schema({
       public_id: String
     }
   ]
-}, { timestamps: true });
+}, { timestamps: true , strictPopulate: false});
 
 export default mongoose.model("Case", caseSchema);
 
