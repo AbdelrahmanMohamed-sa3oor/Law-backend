@@ -4,6 +4,7 @@ import { cloudinary } from "../Config/cloudinary.js";
 import Case from "../models/Case.js";
 
 // ✅ إضافة قضية جديدة
+// في controllers/caseController.js - دالة createCase
 export const createCase = async (req, res) => {
   try {
     const {
@@ -24,9 +25,10 @@ export const createCase = async (req, res) => {
       expenses,
       paid,     
       remaining,  
-      addressCase,//اهو
-      addressClient,//اهو
-      phoneClient//اهو
+      addressCase,
+      addressClient,
+      phoneClient,
+      dateSession // 🔥 جديد
     } = req.body;
 
     // ✅ رفع الصور إلى Cloudinary
@@ -70,6 +72,21 @@ export const createCase = async (req, res) => {
       }
     }
 
+    // 🔥 معالجة جلسات القضية
+    let processedDateSessions = [];
+    if (dateSession) {
+      try {
+        processedDateSessions = JSON.parse(dateSession).map(session => ({
+          date: session.date ? new Date(session.date) : new Date(),
+          request: session.request || '',
+          notes: session.notes || ''
+        }));
+        console.log(`✅ تم معالجة ${processedDateSessions.length} جلسة`);
+      } catch (error) {
+        console.error('❌ خطأ في معالجة جلسات القضية:', error);
+      }
+    }
+
     // تحويل البيانات وتنظيفها
     const caseData = {
       caseNumber,
@@ -82,12 +99,13 @@ export const createCase = async (req, res) => {
       phoneClient,
       opponentName,
       notes,
-      paid: paid ? parseFloat(paid) : 0,           // ✅ هنا
+      paid: paid ? parseFloat(paid) : 0,
       remaining: remaining ? parseFloat(remaining) : 0,
       admin,
       lawyer: req.user._id,
       createdBy: req.user._id,
-      approvalStatus: req.user.role === "admin" ? "approved" : "pending"
+      approvalStatus: req.user.role === "admin" ? "approved" : "pending",
+      dateSession: processedDateSessions // 🔥 إضافة الجلسات
     };
 
     // إضافة الحقول الاختيارية إذا كانت موجودة
@@ -696,10 +714,37 @@ export const getCaseStats = async (req, res) => {
   }
 };
 // القضاية قبل موعدها بي،وم
+let tomorrowCasesCache = {
+  data: null,
+  expiry: null,
+  date: null
+};
+
 export const getTomorrowCases = async (req, res) => {
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    
+    console.log('🔍 Starting getTomorrowCases...');
+    console.log('📅 Today:', today);
+
+    // ⏰ تحديد نهاية اليوم
+    const endOfToday = new Date(today);
+    endOfToday.setHours(23, 59, 59, 999);
+
+    // 🔍 لو في cache صالحة، نرجعها
+    if (tomorrowCasesCache.data && 
+        tomorrowCasesCache.expiry && 
+        new Date() < tomorrowCasesCache.expiry) {
+      console.log('✅ Returning cached data');
+      return res.status(200).json({
+        success: true,
+        count: tomorrowCasesCache.data.length,
+        cached: true,
+        cacheExpiresAt: tomorrowCasesCache.expiry,
+        data: tomorrowCasesCache.data,
+      });
+    }
 
     // 📅 تحديد يوم الغد
     const tomorrow = new Date(today);
@@ -709,16 +754,56 @@ export const getTomorrowCases = async (req, res) => {
     const endOfTomorrow = new Date(tomorrow);
     endOfTomorrow.setHours(23, 59, 59, 999);
 
-    // 🔍 البحث عن القضايا التي موعد جلستها غدًا
+    console.log('🔎 Query parameters:');
+    console.log('Start of Tomorrow:', startOfTomorrow);
+    console.log('End of Tomorrow:', endOfTomorrow);
+
+    // 🔍 البحث عن القضايا اللي ليها جلسات غداً
     const cases = await Case.find({
-      postponedTo: { $gte: startOfTomorrow, $lte: endOfTomorrow },
-    }).sort({ postponedTo: 1 });
+      "dateSession.date": { 
+        $gte: startOfTomorrow, 
+        $lte: endOfTomorrow 
+      }
+    }).sort({ "dateSession.date": 1 });
+
+    console.log('📊 Cases found:', cases.length);
+    
+    // 💡 تصفية الجلسات
+    const casesWithFilteredSessions = cases.map(caseItem => {
+      console.log(`📋 Case ${caseItem.caseNumber} has ${caseItem.dateSession?.length || 0} sessions`);
+      
+      const filteredSessions = caseItem.dateSession.filter(session => {
+        const sessionDate = new Date(session.date);
+        const isInRange = sessionDate >= startOfTomorrow && sessionDate <= endOfTomorrow;
+        console.log(`   Session ${session.date} in range: ${isInRange}`);
+        return isInRange;
+      });
+
+      console.log(`   Filtered to ${filteredSessions.length} sessions`);
+
+      return {
+        ...caseItem.toObject(),
+        dateSession: filteredSessions
+      };
+    });
+
+    console.log('📦 Final data:', casesWithFilteredSessions.length, 'cases with sessions');
+
+    // 💾 حفظ في الكاش لحد آخر اليوم
+    tomorrowCasesCache = {
+      data: casesWithFilteredSessions,
+      expiry: endOfToday,
+      date: today
+    };
 
     res.status(200).json({
       success: true,
-      count: cases.length,
-      data: cases,
+      count: casesWithFilteredSessions.length,
+      cached: false,
+      cacheExpiresAt: endOfToday,
+      data: casesWithFilteredSessions,
     });
+    
   } catch (error) {
     console.error("❌ Error fetching tomorrow cases:", error);
     res.status(500).json({
@@ -727,3 +812,51 @@ export const getTomorrowCases = async (req, res) => {
     });
   }
 };
+
+// دالة علشان نجرب نشوف كل الجلسات القادمة (مش بس غداً)
+export const getAllUpcomingSessions = async (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // 🔍 البحث عن القضايا اللي ليها جلسات في المستقبل
+    const cases = await Case.find({
+      "dateSession.date": { 
+        $gte: today
+      }
+    }).sort({ "dateSession.date": 1 });
+
+    console.log('🔍 All upcoming sessions query - Cases found:', cases.length);
+
+    // 💡 تصفية الجلسات القادمة فقط
+    const casesWithUpcomingSessions = cases.map(caseItem => {
+      const upcomingSessions = caseItem.dateSession.filter(session => {
+        const sessionDate = new Date(session.date);
+        return sessionDate >= today;
+      });
+
+      console.log(`📋 Case ${caseItem.caseNumber}: ${upcomingSessions.length} upcoming sessions`);
+
+      return {
+        ...caseItem.toObject(),
+        dateSession: upcomingSessions
+      };
+    }).filter(caseItem => caseItem.dateSession.length > 0);
+
+    console.log('📦 Final upcoming sessions data:', casesWithUpcomingSessions.length, 'cases');
+
+    res.status(200).json({
+      success: true,
+      count: casesWithUpcomingSessions.length,
+      data: casesWithUpcomingSessions,
+    });
+    
+  } catch (error) {
+    console.error("❌ Error fetching upcoming sessions:", error);
+    res.status(500).json({
+      success: false,
+      message: "حدث خطأ أثناء جلب الجلسات القادمة",
+    });
+  }
+};
+

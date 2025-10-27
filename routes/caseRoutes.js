@@ -9,7 +9,8 @@ import {
   searchCases,
   getCaseStats,
   getTomorrowCases,
-  getCasesPage
+  getCasesPage,
+  getAllUpcomingSessions
 } from "../controllers/caseController.js";
 
 import { protect, authorizeRoles } from "../middlewares/authMiddleware.js";
@@ -19,12 +20,12 @@ const router = express.Router();
 
 router.get("/upcoming-tomorrow", getTomorrowCases);
 router.get("/stats", protect, authorizeRoles("admin"), getCaseStats);
-
+router.get('/upcoming-sessions', getAllUpcomingSessions);
 // 🟢 إنشاء قضية جديدة مع الصور
 router.post(
   "/",
   protect,
-  authorizeRoles("admin", "subadmin"),
+  authorizeRoles("admin", "subadmin","secretary"),
   upload.array("attachments", 15), // استقبال حتى 5 صور
   createCase
 );
@@ -37,7 +38,7 @@ router.get("/search/all", protect, searchCases);
 router.get("/:id", protect, getCaseById);
 
 // 🟢 تحديث قضية
-router.put("/:id", protect, authorizeRoles("admin", "subadmin"), upload.array('attachments'), updateCase);
+router.put("/:id", protect, authorizeRoles("admin", "subadmin","secretary"), upload.array('attachments'), updateCase);
 
 // 🟢 حذف قضية
 router.delete("/:id", protect, authorizeRoles("admin"), deleteCase);

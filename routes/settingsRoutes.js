@@ -4,34 +4,24 @@ import {
   getSettings, 
   updateSettings, 
   createBackup, 
-  downloadBackup, 
-  exportCasesToExcel,
-  updateSiteLogo,
   getSystemStats,
+  createFullBackup,    
+  restoreBackup,       
+  getBackupInfo        
 } from "../controllers/settingsController.js";
 import { protect, authorizeRoles } from "../middlewares/authMiddleware.js";
-import { upload } from "../middlewares/uploadMiddleware.js";
+import { backupUpload, validateFile } from "../middlewares/backupUpload.js";
 
 const router = express.Router();
 
-// 🔐 جميع الروتس الأخرى تحتاج authentication
 router.use(protect);
 
-// 🛠️ الإعدادات العامة
 router.get("/", getSettings);
 router.put("/", authorizeRoles("admin"), updateSettings);
-
-// 💾 النسخ الاحتياطي
-router.post("/backup", authorizeRoles("admin"), createBackup);
-router.get("/backup/download/:backupId", authorizeRoles("admin"), downloadBackup);
-
-// 📊 تصدير البيانات
-router.get("/export/cases", authorizeRoles("admin", "subadmin"), exportCasesToExcel);
-
-// 🖼️ إدارة الموقع
-router.patch("/logo", authorizeRoles("admin"), upload.single('logo'), updateSiteLogo);
-
-// 📈 إحصائيات النظام
+router.post("/backup", authorizeRoles("admin","subadmin"), createBackup);
+router.get("/backup/full", authorizeRoles("admin","subadmin"), createFullBackup);
+router.post("/backup/restore", authorizeRoles("admin","subadmin"), backupUpload.single('backupFile'), validateFile, restoreBackup);
+router.get("/backup/info", authorizeRoles("admin","subadmin"), getBackupInfo);
 router.get("/stats", authorizeRoles("admin", "subadmin"), getSystemStats);
 
 export default router;

@@ -15,7 +15,6 @@ const lawyerSchema = new mongoose.Schema({
     required: true
   },
   nationalId: { type: String, required: true },
-  startDate: { type: Date, required: true },
   address: { type: String, required: true },
   image: { 
     type: {
@@ -28,7 +27,7 @@ const lawyerSchema = new mongoose.Schema({
   password: { type: String, required: true },
   role: {
     type: String,
-    enum: ["admin", "subadmin", "lawyer"],
+    enum: ["admin", "subadmin", "lawyer","secretary"],
     default: "lawyer"
   },
   isActive: {
@@ -36,7 +35,6 @@ const lawyerSchema = new mongoose.Schema({
     default: true
   },
   phone : {type:String},
-  salary:String
 }, { timestamps: true });
 
 // ✅ توليد كود تلقائي لو مش مضاف

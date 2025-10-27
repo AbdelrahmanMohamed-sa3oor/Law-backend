@@ -56,10 +56,10 @@ router.put("/:id", updateLawyer);
 // 🔍 روت البحث الأساسي
 router.get('/search', searchLawyers);
 // 🟢 حذف مستخدم - للإدمن والسب إدمن
-router.delete("/:id", authorizeRoles("admin", "subadmin"), deleteLawyer);
+router.delete("/:id", authorizeRoles("admin", "subadmin","secretary"), deleteLawyer);
 
 // 🟢 تفعيل/تعطيل مستخدم - للإدمن والسب إدمن
-router.patch("/:id/toggle-status", authorizeRoles("admin", "subadmin"), toggleUserStatus);
+router.patch("/:id/toggle-status", authorizeRoles("admin", "subadmin","secretary"), toggleUserStatus);
 
 // 🟢 جلب بيانات المستخدم الحالي
 router.get("/profile/me", (req, res) => {

@@ -202,6 +202,7 @@ export const deletePost = async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user._id;
+    const userRole = req.user.role;
 
     // تحقق من وجود البوست
     const post = await Post.findById(id);
@@ -213,12 +214,19 @@ export const deletePost = async (req, res) => {
       });
     }
 
-    // تحقق إذا كان المستخدم هو منشئ البوست
-    if (post.createdBy.toString() !== userId.toString()) {
-      return res.status(403).json({
-        success: false,
-        message: "غير مصرح لك بحذف هذا المنشور. يمكنك حذف المنشورات التي قمت بنشرها فقط"
-      });
+    // تحقق من صلاحية المستخدم للحذف
+    const isOwner = post.createdBy.toString() === userId.toString();
+    
+    // 🟢 ADMIN يمكنه حذف أي بوست
+    // 🟢 SUBADMIN أو LAWYER يمكنهم حذف البوستات التي قاموا بنشرها فقط
+    // 🟢 USER العادي يمكنه حذف البوستات التي قام بنشرها فقط
+    if (userRole !== 'admin') {
+      if (!isOwner) {
+        return res.status(403).json({
+          success: false,
+          message: "غير مصرح لك بحذف هذا المنشور. يمكنك حذف المنشورات التي قمت بنشرها فقط"
+        });
+      }
     }
 
     // إذا كان البوست يحتوي على صورة، احذفها من Cloudinary أولاً

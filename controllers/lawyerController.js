@@ -13,12 +13,10 @@ export const registerLawyer = async (req, res) => {
       registrationNumber,
       registrationLevel,
       nationalId,
-      startDate,
       address,
       password,
       phone,
       role = "lawyer",
-      salary
     } = req.body;
 
     // ✅ استخدام req.file (لـ single upload)
@@ -65,13 +63,11 @@ export const registerLawyer = async (req, res) => {
       registrationNumber,
       registrationLevel,
       nationalId,
-      startDate: new Date(startDate),
       address,
       registrationCode,
       password: hashedPassword,
       role,
       phone,
-      salary
     };
 
     if (imageData) {
@@ -103,49 +99,73 @@ export const updateLawyerImage = async (req, res) => {
   try {
     const lawyerId = req.params.id;
     
-    // التحقق من الصلاحيات
-    if (req.user.id !== lawyerId && !["admin", "subadmin"].includes(req.user.role)) {
-      return res.status(403).json({ message: "❌ غير مسموح بتحديث هذه الصورة" });
+    console.log('🔍 1. User ID:', req.user.id);
+    console.log('🔍 2. Lawyer ID:', lawyerId);
+    console.log('🔍 3. File received:', req.file); // 🔥 تأكد من وجود الملف
+    console.log('🔍 4. Files received:', req.files); // 🔥 إذا كنت تستخدم array
+    
+    if (req.user.id !== lawyerId) {
+      return res.status(403).json({ 
+        success: false,
+        message: "❌ غير مسموح بتحديث هذه الصورة" 
+      });
     }
 
     const lawyer = await Lawyer.findById(lawyerId);
     if (!lawyer) {
-      return res.status(404).json({ message: "⚠️ المستخدم غير موجود" });
+      return res.status(404).json({ 
+        success: false,
+        message: "⚠️ المستخدم غير موجود" 
+      });
     }
+
+    console.log('🔍 5. Current lawyer image:', lawyer.image);
 
     // ✅ رفع الصورة الجديدة إلى Cloudinary
     let newImageData = null;
-    if (req.files && req.files.length > 0) {
-      console.log("🔼 Uploading new image to Cloudinary...");
+    if (req.file) {
+      console.log("🔼 6. Uploading new image to Cloudinary...");
       
-      const file = req.files[0];
-      const result = await new Promise((resolve, reject) => {
-        const uploadStream = cloudinary.uploader.upload_stream(
-          {
-            folder: 'lawyers-profile',
-            resource_type: 'image',
-            transformation: [
-              { width: 300, height: 300, crop: "fill" },
-              { quality: "auto" },
-              { format: "jpg" }
-            ]
-          },
-          (error, result) => {
-            if (error) {
-              reject(error);
-            } else {
-              resolve(result);
+      try {
+        const result = await new Promise((resolve, reject) => {
+          const uploadStream = cloudinary.uploader.upload_stream(
+            {
+              folder: 'lawyers-profile',
+              resource_type: 'image',
+              transformation: [
+                { width: 300, height: 300, crop: "fill" },
+                { quality: "auto" },
+                { format: "jpg" }
+              ]
+            },
+            (error, result) => {
+              if (error) {
+                console.error('❌ Cloudinary upload error:', error);
+                reject(error);
+              } else {
+                console.log('✅ Cloudinary upload success:', result);
+                resolve(result);
+              }
             }
-          }
-        );
-        
-        uploadStream.end(file.buffer);
-      });
+          );
+          
+          uploadStream.end(req.file.buffer);
+        });
 
-      newImageData = {
-        url: result.secure_url,
-        public_id: result.public_id
-      };
+        newImageData = {
+          url: result.secure_url,
+          public_id: result.public_id
+        };
+
+        console.log('🔍 7. New image data:', newImageData);
+
+      } catch (uploadError) {
+        console.error('❌ Cloudinary upload failed:', uploadError);
+        return res.status(500).json({
+          success: false,
+          message: "فشل في رفع الصورة إلى Cloudinary"
+        });
+      }
 
       // 🗑️ حذف الصورة القديمة من Cloudinary إذا كانت موجودة
       if (lawyer.image && lawyer.image.public_id) {
@@ -156,7 +176,11 @@ export const updateLawyerImage = async (req, res) => {
           console.error('❌ Error deleting old image:', deleteError);
         }
       }
+    } else {
+      console.log('❌ No file received in request');
     }
+
+    console.log('🔍 8. Updating lawyer with image data:', newImageData);
 
     // تحديث بيانات المستخدم بالصورة الجديدة
     const updatedLawyer = await Lawyer.findByIdAndUpdate(
@@ -164,6 +188,8 @@ export const updateLawyerImage = async (req, res) => {
       { image: newImageData },
       { new: true }
     ).select('-password');
+
+    console.log('🔍 9. Updated lawyer:', updatedLawyer);
 
     res.json({
       success: true,
@@ -180,7 +206,6 @@ export const updateLawyerImage = async (req, res) => {
   }
 };
 
-// 🟢 تسجيل الدخول بالكود لجميع الأدوار
 // 🟢 تسجيل الدخول بالكود لجميع الأدوار
 export const loginLawyer = async (req, res) => {
   try {
@@ -256,7 +281,6 @@ export const loginLawyer = async (req, res) => {
 };
 
 // 🔹 جلب جميع المستخدمين (مع الفلترة حسب الصلاحيات)
-// في lawyersController.js - عدل دالة getAllLawyers
 export const getAllLawyers = async (req, res) => {
   try {
     const { name, registrationNumber } = req.query;
@@ -305,9 +329,6 @@ export const getLawyerById = async (req, res) => {
   }
 };
 
-
-
-
 export const updateLawyer = async (req, res) => {
   try {
     const updates = req.body;
@@ -318,11 +339,6 @@ export const updateLawyer = async (req, res) => {
     if (!targetLawyer) {
       return res.status(404).json({ message: "⚠️ المستخدم غير موجود" });
     }
-
-    // التحقق من الصلاحيات (إذا كان لديك نظام صلاحيات)
-    // if (!canEditUser(req.user, targetLawyer, updates)) {
-    //   return res.status(403).json({ message: "❌ غير مسموح بالتعديل" });
-    // }
 
     // إذا كان هناك باسوورد في البيانات المرسلة وغير فارغ
     if (updates.password && updates.password.trim() !== '') {

@@ -9,9 +9,9 @@ const caseSchema = new mongoose.Schema({
   previousSession: Date,
   currentSession: Date,
   postponedTo: Date,
-  addressCase:String,
-  addressClient:String,
-  phoneClient:String,
+  addressCase: String,
+  addressClient: String,
+  phoneClient: String,
   sessionDate: Date,
   decision: String,
   request: String,
@@ -30,13 +30,20 @@ const caseSchema = new mongoose.Schema({
     default: "pending"
   },
   expenses: Number,
+  dateSession: [
+    {
+      date: { type: Date, required: true },
+      request: { type: String },
+      notes: { type: String }
+    }
+  ],
   images: [
     {
       url: String,
       public_id: String
     }
   ]
-}, { timestamps: true , strictPopulate: false});
+}, { timestamps: true, strictPopulate: false });
 
 export default mongoose.model("Case", caseSchema);
 
